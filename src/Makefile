@@ -1,24 +1,23 @@
-KERNEL_C_SRCS := $(wildcard *.c)
-KERNEL_A_SRCS := $(wildcard *.s)
+CFLAGS = -target i386-pc-sys-elf -ffreestanding -Iinclude
 
-KERNEL_O_SRCS := $(KERNEL_C_SRCS:.c=.o)
-KERNEL_O_SRCS += $(KERNEL_A_SRCS:.s=.o)
+C_SRCS := $(wildcard */*.c)
+A_SRCS := $(wildcard */*.s)
 
-BUILD = ../build/
+O_SRCS := $(C_SRCS:.c=.o)
+O_SRCS += $(A_SRCS:.s=.o)
 
-KERNEL = ${BUILD}kernel.elf
-OBJ = $(addprefix ${BUILD}, ${KERNEL_O_SRCS})
+KERNEL = kernel.elf
 
-all: ${BUILD} mykernel.elf
+all: ${BUILD} ${KERNEL}
 
-$(BUILD)%.o: %.c
-	clang -target i386-pc-sys-elf -ffreestanding -c $< -o $@
+%.o: %.c
+	clang ${CFLAGS} -c $< -o $@
 
-$(BUILD)%.o: %.s
+%.o: %.s
 	nasm -f elf $< -o $@
 
-mykernel.elf: ${OBJ}
-	i686-elf-ld -n -o ${KERNEL} -T linker.ld ${OBJ}
+${KERNEL}: ${O_SRCS}
+	i686-elf-ld -n -o $@ -T linker.ld ${O_SRCS}
 
 $(BUILD):
 	mkdir -p $@
@@ -26,4 +25,4 @@ $(BUILD):
 clean:
 	rm ${OBJ} ${KERNEL}
 
-.PHONY: clean
+.PHONY: clean ${SUBDIRS}

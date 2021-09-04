@@ -1,11 +1,16 @@
-KERNEL = build/kernel.elf
-ISO    = build/kernel.iso
+KERNEL = src/kernel.elf
+DEST   = iso/boot/kernel.elf
+ISO    = kernel.iso
 
-all: ${ISO}
+all: ${DEST} ${ISO}
 
-${KERNEL}:
+${KERNEL}: FORCE
 	${MAKE} -C src
 
+${DEST}: ${KERNEL}
+	cp ${KERNEL} ${DEST}
+
 ${ISO}: ${KERNEL}
-	cp build/kernel.elf iso/boot
-	grub-mkrescue iso -o build/kernel.iso
+	grub-mkrescue iso -o kernel.iso
+
+FORCE: ;
