@@ -4,9 +4,7 @@
 #include "cursor.h"
 #include "util.h"
 #include "term.h"
-
-const unsigned int VGA_ROWS = 25;
-const unsigned int VGA_COLS = 80;
+#include "vga.h"
 
 // This is the x86's VGA textmode buffer. To display text, we write data to this memory location
 volatile uint16_t* vga_buffer = (uint16_t*)0xB8000;
