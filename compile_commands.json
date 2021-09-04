@@ -1,0 +1,18 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-target",
+      "i386-pc-sys-elf",
+      "-ffreestanding",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "kernel/kernel.o",
+      "kernel/kernel.c"
+    ],
+    "directory": "/home/hs/Coding/os/src",
+    "file": "/home/hs/Coding/os/src/kernel/kernel.c",
+    "output": "/home/hs/Coding/os/src/kernel/kernel.o"
+  }
+]
