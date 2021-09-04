@@ -1,11 +1,10 @@
 #include "shell.h"
 
 #include "term.h"
-#include "keyboard.h"
 #include "util.h"
 
 // Shell to handle user input
-int shell()
+char shell()
 {
   enum keycodes key;
   char ch;
@@ -20,15 +19,23 @@ int shell()
     switch (key)
     {
     case KEY_LEFT:
-      term_puth(term_get_char(0,0));
+      term_cursor_move(-1,0);
       break;
 
     case KEY_RIGHT:
-      return 100;
+      term_cursor_move(1,0);
+      break;
+
+    case KEY_UP:
+      scroll_down();
+      break;
+
+    case KEY_DOWN:
+      scroll_up();
       break;
       
     default:
-      ch = get_ascii_char_lower(key);
+      ch = get_ascii_char(key);
       
       if (ch != 0)
 	term_putc(ch);

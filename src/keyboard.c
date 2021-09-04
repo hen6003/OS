@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include "keyboard.h"
 #include "asm.h"
 

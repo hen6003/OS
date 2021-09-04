@@ -24,13 +24,13 @@ void kernel_main()
   term_color_set(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 
   // Start shell
-  int ret = 0;
+  char ret = 0;
   while ((ret = shell()))
   {
     // Restart shell unless exit code 0
     term_color_set(VGA_COLOR_RED, VGA_COLOR_BLACK);
     term_puts("ERROR: shell returned: ");
-    term_puth(ret);
+    term_puth((int) ret);
     term_putc('\n');
   }
 

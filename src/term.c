@@ -33,7 +33,7 @@ void term_clear()
       // - B is the background color
       // - F is the foreground color
       // - C is the ASCII character
-      vga_buffer[index] = ((uint16_t)term_color << 8) | ' '; // Set the character to blank (a space character)
+      vga_buffer[index] = ((uint16_t)term_color << 8) | '\0'; // Set the character to blank
     }
   }
   // Reset cursor position
@@ -51,6 +51,7 @@ void term_init()
 }
 
 // This function places a single character onto the screen
+// TODO: add ascii \e support
 void term_putc(char c)
 {
   const size_t index = (VGA_COLS * term_row) + term_col; // Like before, calculate the buffer index
@@ -65,12 +66,12 @@ void term_putc(char c)
     break;
 
   case '\b':
-    vga_buffer[index-1] = ((uint16_t)term_color << 8) | ' '; // Set the character to blank (a space character)
+    vga_buffer[index-1] = ((uint16_t)term_color << 8) | '\0'; // Set the character to blank
 
     // Skip blank parts of screen
     if (term_col == 0)
     { 
-      while (vga_buffer[index - tmp] == (((uint16_t)term_color << 8) | ' '))
+      while (vga_buffer[index - tmp] == (((uint16_t)term_color << 8) | '\0'))
 	tmp++;
 
       term_row--;
@@ -82,8 +83,15 @@ void term_putc(char c)
 
     break;
 
-  case 0x7f:
-    vga_buffer[index] = ((uint16_t)term_color << 8) | ' '; // Set the character to blank (a space character)
+  case 0x7f: // Delete key
+    for (unsigned int col = 0; col < VGA_COLS-term_col; col++)
+    {
+      if (vga_buffer[index+col] == (((uint16_t)term_color << 8) | '\0'))
+	break;
+
+      vga_buffer[index+col] = vga_buffer[index+col+1];
+    }
+
     break;
 
   default: // Normal characters just get displayed and then increment the column
@@ -101,10 +109,7 @@ void term_putc(char c)
   
   // What happens if we get past the last row? We need to reset both column and row to 0 in order to loop back to the top of the screen
   if (term_row >= VGA_ROWS)
-  {
-    term_col = 0;
-    term_row = 0;
-  }
+    scroll_up();
 
   update_cursor(term_col, term_row);
 }
@@ -160,4 +165,39 @@ char term_get_char(int x, int y)
   const size_t index = (VGA_COLS * y) + x;
 
   return (char) vga_buffer[index] & (1u << 8) - 1;;
+}
+
+void scroll_up()
+{
+  for (unsigned int col = 0; col < VGA_COLS; col ++)
+  {
+    for (unsigned int row = 1; row < VGA_ROWS; row ++)
+    {
+      const size_t index1 = (VGA_COLS * row) + col;
+      const size_t index2 = (VGA_COLS * (row-1)) + col;
+
+      vga_buffer[index2] = vga_buffer[index1];
+    }
+  }
+  term_cursor_move(0, -1);
+}
+
+void scroll_down()
+{
+  for (unsigned int col = 0; col < VGA_COLS; col++)
+  {
+    for (unsigned int row = VGA_ROWS; row > 0; row--)
+    {
+      const size_t index1 = (VGA_COLS * row) + col;
+      const size_t index2 = (VGA_COLS * (row-1)) + col;
+
+      vga_buffer[index1] = vga_buffer[index2];
+    }
+  }
+
+  // Clear top row
+  for (unsigned int col = 0; col < VGA_COLS; col++)
+      vga_buffer[col] = ((uint16_t)term_color << 8) | '\0';
+
+  term_cursor_move(0, 1);
 }

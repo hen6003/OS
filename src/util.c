@@ -32,7 +32,10 @@ void itoa(int num, char *number, int base)
     while(num != 0)
     {
       x = num % base;
-      number[index] = x + '0';
+      if (x <= 9)
+	number[index] = x + '0';
+      else // Gone off numbers into letters
+	number[index] = x + 'A'-10;
       index--;
       num = num / base;
     }

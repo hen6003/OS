@@ -1,4 +1,5 @@
 #include "color.h"
+#include "keyboard.h"
 
 // This function initiates the terminal by clearing it
 void term_init();
@@ -41,3 +42,12 @@ unsigned int term_cursor_posy();
 
 // Get character in position
 char term_get_char(int x, int y);
+
+// Scroll terminal up
+void scroll_up();
+
+// Scroll terminal down
+void scroll_down();
+
+// Wrapper around keyboard for auto shift/caps handling
+char get_ascii_char(enum keycodes keycode);

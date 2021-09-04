@@ -24,15 +24,10 @@ iso()
     grub-mkrescue iso -o kernel.iso
 }
 
-run()
-{
-    qemu-system-x86_64 -cdrom kernel.iso
-}
-
 try compile "Building kernel"
 try iso "Building iso"
 
 if [ "$1" = "run" ]
 then
-    try run "Running OS"
+    qemu-system-x86_64 -cdrom kernel.iso
 fi
