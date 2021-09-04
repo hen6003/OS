@@ -103,4 +103,9 @@ enum keycodes
 };
 
 enum keycodes get_input_keycode();
+
+// Gets ascii character from keycode (lowercase)
 char get_ascii_char_lower(enum keycodes keycode);
+
+// Gets ascii character from keycode (uppercase)
+char get_ascii_char_upper(enum keycodes keycode);

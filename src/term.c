@@ -1,17 +1,19 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "vga.h"
 #include "cursor.h"
 #include "util.h"
 #include "term.h"
+
+const unsigned int VGA_ROWS = 25;
+const unsigned int VGA_COLS = 80;
 
 // This is the x86's VGA textmode buffer. To display text, we write data to this memory location
 volatile uint16_t* vga_buffer = (uint16_t*)0xB8000;
 
 // We start displaying text in the top-left of the screen (column = 0, row = 0)
-int term_col = 0;
-int term_row = 0;
+unsigned int term_col = 0;
+unsigned int term_row = 0;
 uint8_t term_color = 0x0F; // Black background, White foreground
 
 void term_color_set(enum vga_color fg, enum vga_color bg)
@@ -22,9 +24,9 @@ void term_color_set(enum vga_color fg, enum vga_color bg)
 void term_clear()
 {
   // Clear the textmode buffer
-  for (int col = 0; col < VGA_COLS; col ++)
+  for (unsigned int col = 0; col < VGA_COLS; col ++)
   {
-    for (int row = 0; row < VGA_ROWS; row ++)
+    for (unsigned int row = 0; row < VGA_ROWS; row ++)
     {
       // The VGA textmode buffer has size (VGA_COLS * VGA_ROWS).
       // Given this, we find an index into the buffer for our character
@@ -36,14 +38,13 @@ void term_clear()
       vga_buffer[index] = ((uint16_t)term_color << 8) | ' '; // Set the character to blank (a space character)
     }
   }
+  // Reset cursor position
+  term_cursor_set(0, 0);
 }
  
 // This function initiates the terminal
 void term_init()
 {
-  VGA_COLS = 80;
-  VGA_ROWS = 25;
-  
   enable_cursor(14,15);
   
   term_color_set(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
@@ -83,6 +84,10 @@ void term_putc(char c)
 
     break;
 
+  case 0x7f:
+    vga_buffer[index] = ((uint16_t)term_color << 8) | ' '; // Set the character to blank (a space character)
+    break;
+
   default: // Normal characters just get displayed and then increment the column
     vga_buffer[index] = ((uint16_t)term_color << 8) | c;
     term_col++;
@@ -115,7 +120,46 @@ void term_puts(const char* str)
 
 void term_puti(int num)
 {
-  char str_num[digit_count(num) + 1];
-  itoa(num, str_num);
+  char str_num[digit_count(num, 10) + 1];
+  itoa(num, str_num, 10);
   term_puts(str_num);
+}
+
+void term_puth(int num)
+{
+  char str_num[digit_count(num, 16) + 1];
+  itoa(num, str_num, 16);
+  term_puts("0x");
+  term_puts(str_num);
+}
+
+void term_cursor_set(unsigned int x, unsigned int y)
+{
+  if (x > VGA_COLS)
+    x = VGA_COLS;
+  if (y > VGA_ROWS)
+    y = VGA_ROWS;
+  
+  term_col = x;
+  term_row = y;
+  
+  update_cursor(term_col, term_row);
+}
+
+void term_cursor_move(int x, int y)
+{
+  x += term_col;
+  y += term_row;
+
+  term_cursor_set(x, y);
+}
+
+unsigned int term_cursor_posx() { return term_col; }
+unsigned int term_cursor_posy() { return term_row; }
+
+char term_get_char(int x, int y)
+{
+  const size_t index = (VGA_COLS * y) + x;
+
+  return (char) vga_buffer[index] & (1u << 8) - 1;;
 }

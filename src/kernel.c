@@ -1,6 +1,6 @@
 #include "term.h"
-#include "asm.h"
-#include "keyboard.h"
+#include "util.h"
+#include "shell.h"
 
 // This is our kernel's main function
 void kernel_main()
@@ -11,8 +11,7 @@ void kernel_main()
   term_init();
   
   // Display some messages
-  term_puts("Hello, World!\n");
-  term_puts("Welcome to thd\be kernel.\n\n");
+  term_puts("Kernel started...\n\n");
 
   term_color_set(VGA_COLOR_LIGHT_BLUE, VGA_COLOR_BLACK);
 
@@ -24,19 +23,20 @@ void kernel_main()
   
   term_color_set(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 
-  enum keycodes key;
-  char ch;
-
-  while (1)
+  // Start shell
+  int ret = 0;
+  while ((ret = shell()))
   {
-    key = get_input_keycode();
-
-    ch = get_ascii_char_lower(key);
-
-    if (ch != 0)
-      term_putc(ch);
-
-    key = 0;
-    sleep(0x01FFFFFF);
+    // Restart shell unless exit code 0
+    term_color_set(VGA_COLOR_RED, VGA_COLOR_BLACK);
+    term_puts("ERROR: shell returned: ");
+    term_puth(ret);
+    term_putc('\n');
   }
+
+  term_puts("Shutting down...");
+  
+  sleep(0x0FFFFFFF);
+
+  shutdown();
 }

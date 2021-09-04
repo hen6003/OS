@@ -1,6 +1,9 @@
-#include "util.h"
+// This file implements some useful functions
 
-size_t digit_count(int num)
+#include "util.h"
+#include "asm.h"
+
+size_t digit_count(int num, int base)
 {
   size_t count = 0;
   if(num == 0)
@@ -8,14 +11,14 @@ size_t digit_count(int num)
   while(num > 0)
   {
     count++;
-    num = num/10;
+    num = num/base;
   }
   return count;
 }
 
-void itoa(int num, char *number)
+void itoa(int num, char *number, int base)
 {
-  int dgcount = digit_count(num);
+  int dgcount = digit_count(num, base);
   int index = dgcount - 1;
   char x;
 
@@ -28,11 +31,21 @@ void itoa(int num, char *number)
   {
     while(num != 0)
     {
-      x = num % 10;
+      x = num % base;
       number[index] = x + '0';
       index--;
-      num = num / 10;
+      num = num / base;
     }
     number[dgcount] = '\0';
   }
+}
+
+void shutdown()
+{
+  outw(0x604, 0x2000);
+}
+
+void sleep(uint32_t timer_count)
+{
+  wait(timer_count);
 }

@@ -15,19 +15,18 @@ try() {
 
 compile()
 {
-    cd src
-    make
+    make -C src/
 }
 
 iso()
 {
-    cp src/mykernel.elf iso/boot
-    grub-mkrescue iso -o mykernel.iso
+    cp build/kernel.elf iso/boot
+    grub-mkrescue iso -o kernel.iso
 }
 
 run()
 {
-    qemu-system-x86_64 -cdrom mykernel.iso
+    qemu-system-x86_64 -cdrom kernel.iso
 }
 
 try compile "Building kernel"
