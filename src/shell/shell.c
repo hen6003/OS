@@ -3,6 +3,8 @@
 #include "term.h"
 #include "util.h"
 
+char command[1024] = "";
+
 // Shell to handle user input
 char shell()
 {
@@ -26,23 +28,24 @@ char shell()
       term_cursor_move(1,0);
       break;
 
-    case KEY_UP:
-      scroll_down();
-      break;
-
-    case KEY_DOWN:
-      scroll_up();
+    case KEY_ENTER:
+      term_putc('\n');
+      term_puts(command);
       break;
       
     default:
       ch = get_ascii_char(key);
+
+      command[strlen(command)+1] = '\0';
+      command[strlen(command)] = ch;
       
       if (ch != 0)
 	term_putc(ch);
+      break;
     }
 
     key = 0;
-    sleep(0x01FFFFFF);
+    sleep(0x0005FFFF);
   }
 
   return 0;

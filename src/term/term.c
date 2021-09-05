@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -36,6 +37,10 @@ void term_clear()
       vga_buffer[index] = ((uint16_t)term_color << 8) | '\0'; // Set the character to blank
     }
   }
+
+  term_col = 0;
+  term_row = 0;
+
   // Reset cursor position
   term_cursor_set(0, 0);
 }
@@ -50,56 +55,139 @@ void term_init()
   term_clear();
 }
 
+enum ansi_states
+{
+  ANSI_PRINT,  // Default state
+  ANSI_ESC,    // \e Found
+  ANSI_CSI,    // [ Found
+  ANSI_PARAMS, // Parameters
+  ANSI_INTER,  // Intermediate
+  ANSI_FINAL,  // Final
+};
+
+enum ansi_states ansi_state = ANSI_PRINT;
+char escape_code_params[100];
+char escape_code_function;
+
 // This function places a single character onto the screen
-// TODO: add ascii \e support
 void term_putc(char c)
 {
-  const size_t index = (VGA_COLS * term_row) + term_col; // Like before, calculate the buffer index
   int tmp = 0;
 
-  // Remember - we don't want to display ALL characters!
-  switch (c)
+  switch (ansi_state)
   {
-  case '\n': // Newline characters should return the column to 0, and increment the row
-    term_col = 0;
-    term_row++;
-    break;
-
-  case '\b':
-    vga_buffer[index-1] = ((uint16_t)term_color << 8) | '\0'; // Set the character to blank
-
-    // Skip blank parts of screen
-    if (term_col == 0)
-    { 
-      while (vga_buffer[index - tmp] == (((uint16_t)term_color << 8) | '\0'))
-	tmp++;
-
-      term_row--;
-      if (tmp < 80)
-	term_col = VGA_COLS - tmp + 1;
-    }
-    else
-      term_col--;
-
-    break;
-
-  case 0x7f: // Delete key
-    for (unsigned int col = 0; col < VGA_COLS-term_col; col++)
+  case ANSI_PRINT:
+  print:
+  {
+    const size_t index = (VGA_COLS * term_row) + term_col; // Like before, calculate the buffer index
+    // Remember - we don't want to display ALL characters!
+    switch (c)
     {
-      if (vga_buffer[index+col] == (((uint16_t)term_color << 8) | '\0'))
-	break;
-
-      vga_buffer[index+col] = vga_buffer[index+col+1];
+    case '\n': // Newline characters should return the column to 0, and increment the row
+      term_col = 0;
+      term_row++;
+      break;
+      
+    case '\b':
+      vga_buffer[index-1] = ((uint16_t)term_color << 8) | '\0'; // Set the character to blank
+      
+      // Skip blank parts of screen
+      if (term_col == 0)
+      { 
+	while (vga_buffer[index - tmp] == (((uint16_t)term_color << 8) | '\0'))
+	  tmp++;
+	
+	term_row--;
+	if (tmp < 80)
+	  term_col = VGA_COLS - tmp + 1;
+      }
+      else
+	term_col--;
+      
+      break;
+      
+    case 0x7f: // Delete key
+      for (unsigned int col = 0; col < VGA_COLS-term_col; col++)
+      {
+	if (vga_buffer[index+col] == (((uint16_t)term_color << 8) | '\0'))
+	  break;
+	
+	vga_buffer[index+col] = vga_buffer[index+col+1];
+      }
+      
+      break;
+      
+    case '\e':
+      ansi_state = ANSI_ESC;
+      escape_code_params[0] = '\0';
+      escape_code_function  = '\0';
+      break;
+      
+    default: // Normal characters just get displayed and then increment the column
+      vga_buffer[index] = ((uint16_t)term_color << 8) | c;
+      term_col++;
+      break;
     }
-
-    break;
-
-  default: // Normal characters just get displayed and then increment the column
-    vga_buffer[index] = ((uint16_t)term_color << 8) | c;
-    term_col++;
     break;
   }
-  
+    
+  case ANSI_ESC:
+    if (c == '[')
+      ansi_state = ANSI_CSI;
+    else goto abort;
+    break;
+    
+  case ANSI_CSI:
+    if (c >= '0' && c <= '?')
+      append(escape_code_params, c);
+    else if (c >= ' ' && c <= '/')
+      ansi_state = ANSI_PARAMS;
+    else if (c >= '@' && c <= '~')
+    {
+      ansi_state = ANSI_FINAL;
+      escape_code_function = c;
+    }
+    else goto abort;
+    break;
+    
+  case ANSI_PARAMS:	
+    if (c >= '!' && c <= '/') ;
+    else if (c >= '@' && c <= '~')
+    {
+      ansi_state = ANSI_FINAL;
+      escape_code_function = c;
+    }
+    else goto abort;
+    break;
+
+  case ANSI_INTER:
+    if (c >= '@' && c <= '~')
+    {
+      ansi_state = ANSI_FINAL;
+      escape_code_function = c;
+    }
+    else goto abort;
+    break;
+
+  case ANSI_FINAL:
+    ansi_state = ANSI_PRINT;
+
+    // Parse escape code
+    switch (escape_code_function)
+    {
+    case 'J':
+      term_clear();
+      break;
+    }
+
+    goto print; // Print character
+    break;
+
+  abort:
+    ansi_state = ANSI_PRINT;
+    break;
+  }
+   
   // What happens if we get past the last column? We need to reset the column to 0, and increment the row to get to a new line
   if (term_col >= VGA_COLS)
   {
@@ -110,7 +198,7 @@ void term_putc(char c)
   // What happens if we get past the last row? We need to reset both column and row to 0 in order to loop back to the top of the screen
   if (term_row >= VGA_ROWS)
     scroll_up();
-
+  
   update_cursor(term_col, term_row);
 }
 

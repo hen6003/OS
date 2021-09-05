@@ -8,11 +8,123 @@
       "-Iinclude",
       "-c",
       "-o",
+      "asm/asm.o",
+      "asm/asm.c"
+    ],
+    "directory": "/home/hs/Coding/os/src",
+    "file": "/home/hs/Coding/os/src/asm/asm.c",
+    "output": "/home/hs/Coding/os/src/asm/asm.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-target",
+      "i386-pc-sys-elf",
+      "-ffreestanding",
+      "-Iinclude",
+      "-c",
+      "-o",
       "kernel/kernel.o",
       "kernel/kernel.c"
     ],
     "directory": "/home/hs/Coding/os/src",
     "file": "/home/hs/Coding/os/src/kernel/kernel.c",
     "output": "/home/hs/Coding/os/src/kernel/kernel.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-target",
+      "i386-pc-sys-elf",
+      "-ffreestanding",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "keyboard/keyboard.o",
+      "keyboard/keyboard.c"
+    ],
+    "directory": "/home/hs/Coding/os/src",
+    "file": "/home/hs/Coding/os/src/keyboard/keyboard.c",
+    "output": "/home/hs/Coding/os/src/keyboard/keyboard.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-target",
+      "i386-pc-sys-elf",
+      "-ffreestanding",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "shell/shell.o",
+      "shell/shell.c"
+    ],
+    "directory": "/home/hs/Coding/os/src",
+    "file": "/home/hs/Coding/os/src/shell/shell.c",
+    "output": "/home/hs/Coding/os/src/shell/shell.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-target",
+      "i386-pc-sys-elf",
+      "-ffreestanding",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "term/cursor.o",
+      "term/cursor.c"
+    ],
+    "directory": "/home/hs/Coding/os/src",
+    "file": "/home/hs/Coding/os/src/term/cursor.c",
+    "output": "/home/hs/Coding/os/src/term/cursor.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-target",
+      "i386-pc-sys-elf",
+      "-ffreestanding",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "term/term.o",
+      "term/term.c"
+    ],
+    "directory": "/home/hs/Coding/os/src",
+    "file": "/home/hs/Coding/os/src/term/term.c",
+    "output": "/home/hs/Coding/os/src/term/term.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-target",
+      "i386-pc-sys-elf",
+      "-ffreestanding",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "term/term_keyboard.o",
+      "term/term_keyboard.c"
+    ],
+    "directory": "/home/hs/Coding/os/src",
+    "file": "/home/hs/Coding/os/src/term/term_keyboard.c",
+    "output": "/home/hs/Coding/os/src/term/term_keyboard.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-target",
+      "i386-pc-sys-elf",
+      "-ffreestanding",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "util/util.o",
+      "util/util.c"
+    ],
+    "directory": "/home/hs/Coding/os/src",
+    "file": "/home/hs/Coding/os/src/util/util.c",
+    "output": "/home/hs/Coding/os/src/util/util.o"
   }
 ]

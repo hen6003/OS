@@ -3,6 +3,17 @@
 #include "util.h"
 #include "asm.h"
 
+size_t strlen(char *str)
+{
+  size_t len = 0;
+
+  while (str[len++] != '\0') ;
+
+  len--; // Discount ending NULL
+  
+  return len;
+}
+
 size_t digit_count(int num, int base)
 {
   size_t count = 0;
@@ -51,4 +62,10 @@ void shutdown()
 void sleep(uint32_t timer_count)
 {
   wait(timer_count);
+}
+
+void append(char *s, char c)
+{
+  s[strlen(s)+1] = '\0';
+  s[strlen(s)]   = c;
 }
