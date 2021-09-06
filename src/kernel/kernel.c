@@ -25,7 +25,7 @@ void kernel_main()
 
   // Test ascii
 
-  term_puts("\e[J");
+  term_puts("t\e[4At");
 
   // Start shell
   //char ret = 0;
@@ -40,7 +40,7 @@ void kernel_main()
 
   term_puts("Shutting down...");
   
-  sleep(0x00FFFFFF);
+  sleep(0xFFFFFFFF);
 
   shutdown();
 }

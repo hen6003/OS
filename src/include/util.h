@@ -10,6 +10,8 @@ size_t digit_count(int num, int base);
 // Converts numbers to strings
 void itoa(int num, char *number, int base);
 
+int atoi(char *string);
+
 // Shuts down the computer
 void shutdown();
 

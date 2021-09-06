@@ -54,6 +54,24 @@ void itoa(int num, char *number, int base)
   }
 }
 
+int atoi(char *string)
+{
+  int ret = 0;
+
+  for (int i = 0; i < strlen(string); i++)
+  {
+    if (string[i] >= '0' && string[i] <= '9')
+    {
+      ret *= 10;
+      ret += string[i] - '0';
+    }
+    else
+      return 0;
+  }
+  
+  return ret;
+}
+
 void shutdown()
 {
   outw(0x604, 0x2000);

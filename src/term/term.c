@@ -172,11 +172,69 @@ void term_putc(char c)
   case ANSI_FINAL:
     ansi_state = ANSI_PRINT;
 
+    int string_ends[10];
+    string_ends[0] = 0;
+    int string_endi = 1;
+    int params[10];
+
+    for (int i = 0; i < strlen(escape_code_params); i++)
+      if (escape_code_params[i] == ';')
+      {
+	escape_code_params[i] = '\0';
+	string_ends[string_endi++] = i;
+      }
+
+    for (int i = 0; i < string_endi; i++)
+      params[i] = atoi((char *) &escape_code_params[string_ends[i]]);
+    
+    int tmpi;
+
     // Parse escape code
     switch (escape_code_function)
     {
-    case 'J':
-      term_clear();
+    case 'A':
+      tmpi = params[0];
+      if (tmpi == 0)
+	tmpi = 1;
+      term_cursor_move(0, -tmpi);
+      break;
+    case 'B':
+      tmpi = atoi(escape_code_params);
+      if (tmpi == 0)
+	tmpi = 1;
+      term_cursor_move(0, tmpi);
+      break;
+    case 'C':
+      tmpi = atoi(escape_code_params);
+      if (tmpi == 0)
+	tmpi = 1;
+      term_cursor_move(tmpi, 0);
+      break;
+    case 'D':
+      tmpi = atoi(escape_code_params);
+      if (tmpi == 0)
+	tmpi = 1;
+      term_cursor_move(-tmpi, 0);
+      break;
+    case 'E':
+      tmpi = atoi(escape_code_params);
+      if (tmpi == 0)
+	tmpi = 1;
+      term_cursor_set(0, term_row+tmpi);
+      break;
+    case 'F':
+      tmpi = atoi(escape_code_params);
+      if (tmpi == 0)
+	tmpi = 1;
+      term_cursor_set(0, term_row-tmpi);
+      break;
+    case 'G':
+      tmpi = atoi(escape_code_params);
+      if (tmpi == 0)
+	tmpi = 1;
+      term_col = tmpi-1;
+      break;
+    case 'H':
       break;
     }
 
