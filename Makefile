@@ -3,7 +3,7 @@ DEST   = iso/boot/kernel.elf
 ISO    = image.iso
 LIMINE = /usr/share/limine/
 
-all: ${DEST} ${ISO}
+all: ${ISO}
 
 ${KERNEL}: FORCE
 	${MAKE} -C src
@@ -11,7 +11,7 @@ ${KERNEL}: FORCE
 ${DEST}: ${KERNEL}
 	cp ${KERNEL} ${DEST}
 
-${ISO}:
+${ISO}: ${DEST}
 	cp ${LIMINE}/limine-cd.bin iso/boot/
 	cp ${LIMINE}/limine-eltorito-efi.bin iso/boot/
 	cp ${LIMINE}/limine.sys iso/boot/

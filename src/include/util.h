@@ -18,3 +18,11 @@ void shutdown();
 void sleep(uint32_t timer_count);
 
 void append(char *s, char c);
+
+char *strncpy(char *restrict dest, const char *src, size_t n);
+
+char *strcpy(char *restrict dest, const char *src);
+
+int strcmp(const char *s1, const char *s2);
+
+void *memset(void *s, int c, size_t n);

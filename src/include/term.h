@@ -1,18 +1,12 @@
-#include "color.h"
 #include "keyboard.h"
 
 // This function initiates the terminal by clearing it
 void term_init();
 
-/// Color functions
-
-// Set current color
-void term_color_set(enum vga_color fg, enum vga_color bg);
-
 /// Text functions
 
 // Clear screen
-void term_clear();
+void term_clear(int ansi_type);
 
 // Prints a single character onto the screen
 void term_putc(char c);
@@ -28,9 +22,6 @@ void term_puts(const char* str);
 
 /// Cursor functions
 
-// Set current cursor position
-void term_cursor_set(unsigned int x, unsigned int y);
-
 // Move cursor relative to current position
 void term_cursor_move(int x, int y);
 
@@ -39,15 +30,6 @@ unsigned int term_cursor_posx();
 
 // Get cursor position Y
 unsigned int term_cursor_posy();
-
-// Get character in position
-char term_get_char(int x, int y);
-
-// Scroll terminal up
-void scroll_up();
-
-// Scroll terminal down
-void scroll_down();
 
 // Wrapper around keyboard for auto shift/caps handling
 char get_ascii_char(enum keycodes keycode);

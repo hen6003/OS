@@ -1,44 +1,38 @@
 #include "term.h"
 #include "util.h"
 #include "shell.h"
+#include "descriptor_tables.h"
 
 // This is our kernel's main function
 void kernel_main()
 {
-  // We're here! Let's initiate the terminal and display a message to show we got here.
+  // Initiate descriptor tables
+  init_descriptor_tables();
   
   // Initiate terminal
   term_init();
   
   // Display some messages
-  term_puts("Kernel started...\n\n");
 
-  term_color_set(VGA_COLOR_LIGHT_BLUE, VGA_COLOR_BLACK);
-
-  term_puts("   \\\\\n"
-	    "   (o>\n"
-	    "\\\\_//\n"
-	    " \\_/_)\n"
-	    "  _|_\n\n");
-  
-  term_color_set(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
-
-  // Test ascii
-
-  term_puts("t\e[4At");
+  term_puts("\e[34;1m"
+            "   \\\\\n"
+            "   (o>\n"
+            "\\\\_//\n"
+            " \\_/_)\n"
+            "  _|_\n\n"
+	    "\e[37;22m"); 
 
   // Start shell
-  //char ret = 0;
-  //while ((ret = shell()))
-  //{
-    //// Restart shell unless exit code 0
-    //term_color_set(VGA_COLOR_RED, VGA_COLOR_BLACK);
-    //term_puts("ERROR: shell returned: ");
-    //term_puth((int) ret);
-    //term_putc('\n');
-  //}
+  char ret = 0;
+  while ((ret = shell()))
+  {
+    // Restart shell unless exit code 0
+    term_puts("\e[31mERROR: shell returned:");
+    term_puth((int) ret);
+    term_puts("\e[37m\n");
+  }
 
-  term_puts("Shutting down...");
+  term_puts("\e[31mShutting down...");
   
   sleep(0xFFFFFFFF);
 

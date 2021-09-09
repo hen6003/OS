@@ -2,57 +2,103 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "vga.h"
 #include "cursor.h"
 #include "util.h"
 #include "term.h"
-#include "vga.h"
-
-// This is the x86's VGA textmode buffer. To display text, we write data to this memory location
-volatile uint16_t* vga_buffer = (uint16_t*)0xB8000;
 
 // We start displaying text in the top-left of the screen (column = 0, row = 0)
 unsigned int term_col = 0;
 unsigned int term_row = 0;
-uint8_t term_color = 0x0F; // Black background, White foreground
 
-void term_color_set(enum vga_color fg, enum vga_color bg)
+void term_clear(int ansi_type)
 {
-  term_color = fg | bg << 4;
-}
-
-void term_clear()
-{
-  // Clear the textmode buffer
-  for (unsigned int col = 0; col < VGA_COLS; col ++)
+  switch (ansi_type)
   {
-    for (unsigned int row = 0; row < VGA_ROWS; row ++)
+  case 0:
+    // Clear the textmode buffer
+    for (unsigned int col = 0; col < VGA_COLS; col++)
     {
-      // The VGA textmode buffer has size (VGA_COLS * VGA_ROWS).
-      // Given this, we find an index into the buffer for our character
-      const size_t index = (VGA_COLS * row) + col;
-      // Entries in the VGA buffer take the binary form BBBBFFFFCCCCCCCC, where:
-      // - B is the background color
-      // - F is the foreground color
-      // - C is the ASCII character
-      vga_buffer[index] = ((uint16_t)term_color << 8) | '\0'; // Set the character to blank
+      for (unsigned int row = term_row; row < VGA_ROWS; row++)
+      {
+	if (row == term_row)
+	{
+	  if (col < term_col)
+	    continue;
+	}
+
+	vga_text_setc(row, col, '\0');
+      }
     }
+    break;
+
+  case 1:
+    // Clear the textmode buffer
+    for (unsigned int col = VGA_COLS; (int) col >= 0; col--)
+    {
+      for (unsigned int row = term_row; (int) row >= 0; row--)
+      {
+	if (row == term_row)
+	{
+	  if (col > term_col)
+	    continue;
+	}
+
+	vga_text_setc(row, col, '\0');
+      }
+    }
+    break;
+    break;
+
+  case 3:
+  case 2:
+    // Clear the textmode buffer
+    for (unsigned int col = 0; col < VGA_COLS; col++)
+    {
+      for (unsigned int row = 0; row < VGA_ROWS; row++)
+      {
+	vga_text_setc(row, col, '\0');
+      }
+    }
+    break;
+
+  case 4:
+    for (unsigned int col = term_col; col < VGA_COLS; col++)
+    {
+      vga_text_setc(term_row, col, '\0');
+    }
+    break;
+
+  case 5:
+    for (unsigned int col = term_col; (int) col >= 0; col--)
+    {
+      vga_text_setc(term_row, col, '\0');
+    }
+    break;
+
+  case 6: 
+    for (unsigned int col = 0; col < VGA_COLS; col++)
+    {
+      vga_text_setc(term_row, col, '\0');
+    }
+    break;
   }
-
-  term_col = 0;
-  term_row = 0;
-
-  // Reset cursor position
-  term_cursor_set(0, 0);
 }
  
 // This function initiates the terminal
 void term_init()
 {
-  enable_cursor(14,15);
+  cursor_enable(14,15);
   
-  term_color_set(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+  vga_color_set_fg(VGA_COLOR_LIGHT_GREY);
+  vga_color_set_bg(VGA_COLOR_BLACK);
 
-  term_clear();
+  term_clear(2);
+
+  term_col = 0;
+  term_row = 0;
+
+  cursor_set(0, 0);
 }
 
 enum ansi_states
@@ -83,40 +129,48 @@ void term_putc(char c)
     // Remember - we don't want to display ALL characters!
     switch (c)
     {
+    case '\0':
+      break;
+
     case '\n': // Newline characters should return the column to 0, and increment the row
       term_col = 0;
       term_row++;
       break;
-      
+
     case '\b':
-      vga_buffer[index-1] = ((uint16_t)term_color << 8) | '\0'; // Set the character to blank
-      
+      //vga_buffer[index-1] = ((uint16_t)vga_color << 8) | '\0'; // Set the character to blank
+      vga_text_setc(term_row, term_col-1, '\0');
+
+      /*
       // Skip blank parts of screen
       if (term_col == 0)
       { 
-	while (vga_buffer[index - tmp] == (((uint16_t)term_color << 8) | '\0'))
+	//while (vga_buffer[index - tmp] == (((uint16_t)vga_color << 8) | '\0'))
+	while (vga_get_char(term_row, term_col - tmp) && tmp <= VGA_COLS-term_col)
 	  tmp++;
 	
 	term_row--;
 	if (tmp < 80)
 	  term_col = VGA_COLS - tmp + 1;
       }
-      else
+      else*/
+
+      if (term_col)
 	term_col--;
       
       break;
-      
+      /*
     case 0x7f: // Delete key
       for (unsigned int col = 0; col < VGA_COLS-term_col; col++)
       {
-	if (vga_buffer[index+col] == (((uint16_t)term_color << 8) | '\0'))
+	if (vga_buffer[index+col] == (((uint16_t)vga_color << 8) | '\0'))
 	  break;
 	
 	vga_buffer[index+col] = vga_buffer[index+col+1];
       }
       
       break;
-      
+      */
     case '\e':
       ansi_state = ANSI_ESC;
       escape_code_params[0] = '\0';
@@ -124,7 +178,7 @@ void term_putc(char c)
       break;
       
     default: // Normal characters just get displayed and then increment the column
-      vga_buffer[index] = ((uint16_t)term_color << 8) | c;
+      vga_text_setc(term_row, term_col, c);
       term_col++;
       break;
     }
@@ -173,7 +227,7 @@ void term_putc(char c)
     ansi_state = ANSI_PRINT;
 
     int string_ends[10];
-    string_ends[0] = 0;
+    string_ends[0] = -1;
     int string_endi = 1;
     int params[10];
 
@@ -185,56 +239,137 @@ void term_putc(char c)
       }
 
     for (int i = 0; i < string_endi; i++)
-      params[i] = atoi((char *) &escape_code_params[string_ends[i]]);
-    
-    int tmpi;
+      params[i] = atoi((char *) &escape_code_params[string_ends[i]+1]); 
 
     // Parse escape code
     switch (escape_code_function)
     {
     case 'A':
-      tmpi = params[0];
-      if (tmpi == 0)
-	tmpi = 1;
-      term_cursor_move(0, -tmpi);
+      if (params[0] == 0)
+	params[0] = 1;
+      term_cursor_move(0, -params[0]);
       break;
     case 'B':
-      tmpi = atoi(escape_code_params);
-      if (tmpi == 0)
-	tmpi = 1;
-      term_cursor_move(0, tmpi);
+      if (params[0] == 0)
+	params[0] = 1;
+      term_cursor_move(0, params[0]);
       break;
     case 'C':
-      tmpi = atoi(escape_code_params);
-      if (tmpi == 0)
-	tmpi = 1;
-      term_cursor_move(tmpi, 0);
+      if (params[0] == 0)
+	params[0] = 1;
+      term_cursor_move(params[0], 0);
       break;
     case 'D':
-      tmpi = atoi(escape_code_params);
-      if (tmpi == 0)
-	tmpi = 1;
-      term_cursor_move(-tmpi, 0);
+      if (params[0] == 0)
+	params[0] = 1;
+      term_cursor_move(-params[0], 0);
       break;
     case 'E':
-      tmpi = atoi(escape_code_params);
-      if (tmpi == 0)
-	tmpi = 1;
-      term_cursor_set(0, term_row+tmpi);
+      if (params[0] == 0)
+	params[0] = 1;
+      cursor_set(0, term_row+params[0]);
       break;
     case 'F':
-      tmpi = atoi(escape_code_params);
-      if (tmpi == 0)
-	tmpi = 1;
-      term_cursor_set(0, term_row-tmpi);
+      if (params[0] == 0)
+	params[0] = 1;
+      cursor_set(0, term_row-params[0]);
       break;
     case 'G':
-      tmpi = atoi(escape_code_params);
-      if (tmpi == 0)
-	tmpi = 1;
-      term_col = tmpi-1;
+      if (params[0] == 0)
+	params[0] = 1;
+      term_col = params[0]-1;
       break;
     case 'H':
+    case 'f':
+      if (params[0] == 0)
+	params[0] = 1;
+      if (params[1] == 0 || string_endi < 2)
+	params[1] = 1;
+      term_row = params[0]-1;
+      term_col = params[1]-1;
+      cursor_set(params[1]-1, params[0]-1); 
+      break;
+    case 'J':
+      if (params[0] > 3)
+	break;
+      term_clear(params[0]);
+      break;
+    case 'K':	
+      if (params[0] > 2)
+	break;
+      term_clear(params[0]+4);
+      break;
+    case 'S': 
+      if (params[0] == 0)
+	params[0] = 1;
+      vga_scroll_up(params[0]);
+      break;
+    case 'T': 
+      if (params[0] == 0)
+	params[0] = 1;
+      vga_scroll_down(params[0]);
+    case 'm':
+      // Loop though params
+      for (int i = 0; i < string_endi; i++)
+      {
+	switch (params[i])
+	{
+	case 1:
+	  vga_color_set_bold(true);
+	  break;
+	case 22:
+	  vga_color_set_bold(false);
+	  break;
+	case 30:
+	  vga_color_set_fg(VGA_COLOR_BLACK);
+	  break;
+	case 31:
+	  vga_color_set_fg(VGA_COLOR_RED);
+	  break;
+	case 32:
+	  vga_color_set_fg(VGA_COLOR_GREEN);
+	  break;
+	case 33:
+	  vga_color_set_fg(VGA_COLOR_BROWN);
+	  break;
+	case 34:
+	  vga_color_set_fg(VGA_COLOR_BLUE);
+	  break;
+	case 35:
+	  vga_color_set_fg(VGA_COLOR_MAGENTA);
+	  break;
+	case 36:
+	  vga_color_set_fg(VGA_COLOR_CYAN);
+	  break;
+	case 37:
+	  vga_color_set_fg(VGA_COLOR_LIGHT_GREY);
+	  break;
+	case 40:
+	  vga_color_set_bg(VGA_COLOR_BLACK);
+	  break;
+	case 41:
+	  vga_color_set_bg(VGA_COLOR_RED);
+	  break;
+	case 42:
+	  vga_color_set_bg(VGA_COLOR_GREEN);
+	  break;
+	case 43:
+	  vga_color_set_bg(VGA_COLOR_BROWN);
+	  break;
+	case 44:
+	  vga_color_set_bg(VGA_COLOR_BLUE);
+	  break;
+	case 45:
+	  vga_color_set_bg(VGA_COLOR_MAGENTA);
+	  break;
+	case 46:
+	  vga_color_set_bg(VGA_COLOR_CYAN);
+	  break;
+	case 47:
+	  vga_color_set_bg(VGA_COLOR_LIGHT_GREY);
+	  break;
+	}
+      } 
       break;
     }
 
@@ -255,16 +390,18 @@ void term_putc(char c)
   
   // What happens if we get past the last row? We need to reset both column and row to 0 in order to loop back to the top of the screen
   if (term_row >= VGA_ROWS)
-    scroll_up();
+    vga_scroll_up(1);
   
-  update_cursor(term_col, term_row);
+  cursor_set(term_col, term_row);
 }
 
 // This function prints an entire string onto the screen
 void term_puts(const char* str)
 {
-  for (size_t i = 0; str[i] != '\0'; i ++) // Keep placing characters until we hit the null-terminating character ('\0')
+  size_t i;
+  for (i = 0; str[i] != '\0'; i++) // Keep placing characters until we hit the null-terminating character ('\0')
     term_putc(str[i]);
+  term_putc(str[i]);
 }
 
 void term_puti(int num)
@@ -282,68 +419,13 @@ void term_puth(int num)
   term_puts(str_num);
 }
 
-void term_cursor_set(unsigned int x, unsigned int y)
-{
-  if (x > VGA_COLS)
-    x = VGA_COLS;
-  if (y > VGA_ROWS)
-    y = VGA_ROWS;
-  
-  term_col = x;
-  term_row = y;
-  
-  update_cursor(term_col, term_row);
-}
-
 void term_cursor_move(int x, int y)
 {
   x += term_col;
   y += term_row;
 
-  term_cursor_set(x, y);
+  cursor_set(x, y);
 }
 
 unsigned int term_cursor_posx() { return term_col; }
 unsigned int term_cursor_posy() { return term_row; }
-
-char term_get_char(int x, int y)
-{
-  const size_t index = (VGA_COLS * y) + x;
-
-  return (char) vga_buffer[index] & (1u << 8) - 1;;
-}
-
-void scroll_up()
-{
-  for (unsigned int col = 0; col < VGA_COLS; col ++)
-  {
-    for (unsigned int row = 1; row < VGA_ROWS; row ++)
-    {
-      const size_t index1 = (VGA_COLS * row) + col;
-      const size_t index2 = (VGA_COLS * (row-1)) + col;
-
-      vga_buffer[index2] = vga_buffer[index1];
-    }
-  }
-  term_cursor_move(0, -1);
-}
-
-void scroll_down()
-{
-  for (unsigned int col = 0; col < VGA_COLS; col++)
-  {
-    for (unsigned int row = VGA_ROWS; row > 0; row--)
-    {
-      const size_t index1 = (VGA_COLS * row) + col;
-      const size_t index2 = (VGA_COLS * (row-1)) + col;
-
-      vga_buffer[index1] = vga_buffer[index2];
-    }
-  }
-
-  // Clear top row
-  for (unsigned int col = 0; col < VGA_COLS; col++)
-      vga_buffer[col] = ((uint16_t)term_color << 8) | '\0';
-
-  term_cursor_move(0, 1);
-}

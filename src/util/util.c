@@ -2,6 +2,7 @@
 
 #include "util.h"
 #include "asm.h"
+#include <stddef.h>
 
 size_t strlen(char *str)
 {
@@ -86,4 +87,53 @@ void append(char *s, char c)
 {
   s[strlen(s)+1] = '\0';
   s[strlen(s)]   = c;
+}
+
+char *strncpy(char *restrict dest, const char *src, size_t n)
+{
+  size_t i;
+  
+  for (i = 0; i < n && src[i] != '\0'; i++)
+    dest[i] = src[i];
+  for ( ; i < n; i++)
+    dest[i] = '\0';
+  
+  return dest; 
+}
+
+char *strcpy(char *restrict dest, const char *src)
+{
+  size_t i;
+  
+  for (i = 0; src[i] != '\0'; i++)
+    dest[i] = src[i];
+
+  dest[i] = '\0';
+  
+  return dest; 
+}
+
+int strcmp(const char *s1, const char *s2)
+{
+  int s1s = 0;
+  int s2s = 0;
+
+  for (int i = 0; i < strlen((char *) s1); i++)
+    s1s += s1[i] - '\0';
+
+  for (int i = 0; i < strlen((char *) s2); i++)
+    s2s += s2[i] - '\0';
+
+  return s1s - s2s;
+}
+
+void *memset(void *s, int c, size_t n)
+{
+  for (size_t i = 0; i<n; i++)
+  {
+    int *d = (int *) s;
+    d[i] = c;
+  }
+
+  return s;
 }
